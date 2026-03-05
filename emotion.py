@@ -4,26 +4,41 @@ import cv2
 import numpy as np
 from keras.preprocessing.image import img_to_array
 import matplotlib.pyplot as plt
+import os
 
-# Load the face classifier and emotion detection model
-face_classifier = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-classifier = load_model('emotion_recognition_model.h5')
+# Get the absolute path to the directory containing this script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Load the face classifier and emotion detection model using robust paths
+cascade_path = os.path.join(script_dir, 'haarcascade_frontalface_default.xml')
+model_path = os.path.join(script_dir, 'Emotion_Detection.h5')
+
+face_classifier = cv2.CascadeClassifier(cascade_path)
+classifier = load_model(model_path)
+print("Model loaded successfully.")
 
 # Class labels for emotions
 class_labels = ['Angry', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
 # Start video capture (camera)
 cap = cv2.VideoCapture(0)
+if not cap.isOpened():
+    print("Error: Could not open camera.")
+else:
+    print("Camera opened successfully. Press 'q' to quit.")
 
-# Function to display images in Jupyter Notebook
+# Function to display images (using OpenCV for real-time video)
 def display_image(img):
-    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    plt.axis('off')
-    plt.show()
+    cv2.imshow('Emotion Detector', img)
 
 while True:
     # Grab a single frame of video
     ret, frame = cap.read()
+    if not ret or frame is None:
+        print("Waiting for camera or no frame captured...")
+        cv2.waitKey(1000) # Wait a bit before retrying
+        continue
+
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_classifier.detectMultiScale(gray, 1.3, 5)
 
@@ -51,12 +66,12 @@ while True:
         else:
             cv2.putText(frame, 'No Face Found', (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
 
-    # Show the resulting frame in the Jupyter notebook
+    # Show the resulting frame
     display_image(frame)
 
-    # Break if 'q' is pressed (not needed in Jupyter Notebook, but for your reference)
-    # if cv2.waitKey(1) & 0xFF == ord('q'):
-    #     break
+    # Break if 'q' is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 # Release the video capture and close windows
 cap.release()
